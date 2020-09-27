@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head></head>
+<body>
+
+<script src="three.js"></script>
+<script src="ExtendMaterial.js"></script>
+<script>
+
+let renderer = new THREE.WebGLRenderer()
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setClearColor("gray")
+document.body.appendChild(renderer.domElement);
+
+var scene = new THREE.Scene();
+var camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 100);
+camera.position.z = 2
+
+var geometry = new THREE.PlaneGeometry(1, 1);
+
+let myTex = new THREE.TextureLoader().load('myTex.png')
+let myOtherTex = new THREE.TextureLoader().load('myOtherTex.png')
+
+
+const myMaterial = THREE.extendMaterial(THREE.MeshStandardMaterial, {
+	header: 'uniform sampler2D myTex;\n#define USE_UV\n',
+	fragment: {
+		'void main() {': 'gl_FragColor = texture2D(myTex, vUv);return;'
+	},
+	material: {
+		lights: true
+	},
+	uniforms: {
+		myTex:{value:myTex}
+	}
+})
+
+
+var myMesh = new THREE.Mesh(geometry, myMaterial);
+myMesh.position.x = -1
+scene.add(myMesh)
+
+
+var myOtherMaterial = new THREE.ShaderMaterial({
+	uniforms:{
+		myOtherTex:{value: myOtherTex}
+	},
+	vertexShader: `
+		varying vec2 vUv;
+
+		void main()	{
+			vUv = uv;
+			gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+		}
+	`,
+	fragmentShader: `
+		varying vec2 vUv;
+		uniform sampler2D myOtherTex;
+
+		void main() {
+			gl_FragColor = texture2D(myOtherTex, vUv);
+		}
+	`
+})
+
+var myOtherMesh = new THREE.Mesh(geometry, myOtherMaterial);
+myOtherMesh.position.x = 1
+scene.add(myOtherMesh)
+
+
+function animate() {
+	requestAnimationFrame(animate);
+	renderer.render(scene, camera);
+}
+animate();
+
+</script>
+</body>
+</html>
